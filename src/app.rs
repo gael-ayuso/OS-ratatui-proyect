@@ -83,7 +83,17 @@ impl App {
         frame.render_widget(title, chunks[0]);
 
         //Tabla de procesos
-        self.table.render(frame, chunks[1]);
+        //Crear un layout para que la tabla se centre
+        let table_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Fill(1),
+                Constraint::Ratio(1, 3),
+                Constraint::Fill(1),
+            ])
+            .split(chunks[1]);
+
+        self.table.render(frame, table_layout[1]);
 
         //Botón next
         //Crear el layout para el botón next
@@ -91,9 +101,9 @@ impl App {
             .direction(Direction::Horizontal)
             //Los constrainsts definen el tamaño de las columnas
             .constraints([
-                Constraint::Min(0),     //Espacio vacio a la izquierda del boton
+                Constraint::Fill(1),    //Espacio vacio a la izquierda del boton
                 Constraint::Length(20), //Tamaño del boton
-                Constraint::Min(0),     //Espacio vacio a la derecha del boton
+                Constraint::Fill(1),    //Espacio vacio a la derecha del boton
             ])
             .split(chunks[2]);
 

@@ -11,6 +11,7 @@ use crate::{action::Action, components::Component, core::process::Process};
 pub struct TablaProcesos {
     pub lista: Vec<Process>,
     table_state: TableState,
+    area: Rect,
 }
 
 impl TablaProcesos {
@@ -18,7 +19,11 @@ impl TablaProcesos {
         let mut table_state = TableState::default();
         table_state.select_first();
 
-        Self { lista, table_state }
+        Self {
+            lista,
+            table_state,
+            area: Rect::default(),
+        }
     }
 }
 
@@ -45,16 +50,7 @@ impl Component for TablaProcesos {
     }
 
     fn render(&mut self, frame: &mut Frame, area: Rect) {
-        let centered_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(35), // Margen izquierdo
-                Constraint::Percentage(30), // Ancho de la tabla
-                Constraint::Percentage(35), // Margen derecho
-            ])
-            .split(area);
-
-        let table_area = centered_layout[1];
+        self.area = area;
 
         let header = Row::new(["PROCESO", "TIEMPO DE LLEGADA", "TIEMPO DE RAFAGA"])
             .style(ratatui::style::Style::new().bold())
@@ -97,6 +93,6 @@ impl Component for TablaProcesos {
             .cell_highlight_style(ratatui::style::Style::new().reversed().light_magenta())
             .highlight_symbol(">>");
 
-        frame.render_stateful_widget(table, table_area, &mut self.table_state);
+        frame.render_stateful_widget(table, self.area, &mut self.table_state);
     }
 }

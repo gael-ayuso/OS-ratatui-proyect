@@ -9,6 +9,7 @@ use tui_big_text::{BigText, PixelSize};
 
 pub struct Title {
     pub lines: Vec<String>,
+    #[allow(unused)]
     style: Option<Style>,
 }
 

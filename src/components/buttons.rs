@@ -70,15 +70,6 @@ impl Component for Buttons {
     fn render(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) {
         self.area = area;
 
-        // let area = Layout::default()
-        //     .direction(Direction::Horizontal)
-        //     .constraints([
-        //         Constraint::Percentage(20),
-        //         Constraint::Percentage(60),
-        //         Constraint::Percentage(20),
-        //     ])
-        //     .split(area)[1];
-
         let style = if self.is_pressed {
             self.style.add_modifier(ratatui::style::Modifier::REVERSED)
         } else {
@@ -90,6 +81,6 @@ impl Component for Buttons {
             .alignment(Alignment::Center)
             .block(Block::default().borders(Borders::ALL));
 
-        frame.render_widget(button, area);
+        frame.render_widget(button, self.area);
     }
 }
