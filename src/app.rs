@@ -1,57 +1,105 @@
+use std::time::Duration;
+
+use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::{
-    Frame,
+    DefaultTerminal, Frame,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
-    widgets::{Block, Borders, Paragraph},
+    style::{Color, Style, Stylize},
+    text::{Line, Span},
+    widgets::{Block, Borders, Padding},
+};
+
+use crate::{
+    components::{Component, Event, table::TablaProcesos, title::Title},
+    core::process::Process,
 };
 
 pub struct App {
     pub exit: bool,
+    components: Vec<Box<dyn Component>>,
 }
 
 impl App {
     pub fn new() -> Self {
-        Self { exit: false }
+        let procesos = vec![
+            Process::new(1, 0, 6),
+            Process::new(2, 1, 4),
+            Process::new(3, 2, 2),
+            Process::new(4, 3, 3),
+        ];
+
+        Self {
+            exit: false,
+            components: vec![
+                Box::new(Title::new(
+                    vec![
+                        String::from("SIMULACION DE LA APLICACION"),
+                        String::from("DEL ALGORITMO SRTF"),
+                    ],
+                    Style::default().fg(Color::White),
+                )),
+                Box::new(TablaProcesos::new(procesos)),
+            ],
+        }
     }
 
-    /// Update function called repeatedly (e.g. for algorithms or animations)
-    pub fn tick(&mut self) {
-        // Put logic here
+    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> color_eyre::Result<()> {
+        while !self.exit {
+            terminal.draw(|frame| self.render_ui(frame))?;
+            self.handle_events()?;
+        }
+        Ok(())
     }
 
-    pub fn quit(&mut self) {
-        self.exit = true;
-    }
+    fn render_ui(&mut self, frame: &mut Frame) {
+        let area = frame.area();
 
-    /// Render the UI on the frame
-    pub fn ui(&self, frame: &mut Frame) {
+        let title = Line::from_iter([
+            Span::from("SIMULACIÓN DEL ALGORITMO SRTF").bold(),
+            Span::from(" (q: salir)"),
+        ]);
+
+        let block = Block::default()
+            .title(title)
+            .padding(Padding::new(3, 3, 3, 3))
+            .borders(Borders::ALL);
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        // Un área por componente (vertical)
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .margin(1)
-            .constraints(
-                [
-                    Constraint::Length(3), // Header
-                    Constraint::Min(0),    // Main body
-                    Constraint::Length(3), // Footer
-                ]
-                .as_ref(),
-            )
-            .split(frame.area());
+            .constraints([Constraint::Length(4), Constraint::Min(0)])
+            .spacing(2)
+            .split(inner);
 
-        // Header
-        let title_block = Block::default()
-            .borders(Borders::ALL)
-            .style(Style::default().fg(Color::Cyan));
-        let title = Paragraph::new("OS Simulator - Ratatui").block(title_block);
-        frame.render_widget(title, chunks[0]);
+        for (i, component) in self.components.iter_mut().enumerate() {
+            if let Some(&chunk) = chunks.get(i) {
+                component.render(frame, chunk);
+            }
+        }
+    }
 
-        // Main body
-        let main_block = Block::default().title("Main Content").borders(Borders::ALL);
-        frame.render_widget(main_block, chunks[1]);
-
-        // Footer
-        let footer_block = Block::default().borders(Borders::ALL);
-        let footer = Paragraph::new("Press 'q' to quit.").block(footer_block);
-        frame.render_widget(footer, chunks[2]);
+    fn handle_events(&mut self) -> color_eyre::Result<()> {
+        if event::poll(Duration::from_millis(16))? {
+            let ev = event::read()?;
+            if let crossterm::event::Event::Key(key) = ev {
+                if key.kind != KeyEventKind::Press {
+                    return Ok(());
+                }
+                // Teclas globales
+                if matches!(key.code, KeyCode::Char('q') | KeyCode::Esc) {
+                    self.exit = true;
+                    return Ok(());
+                }
+                // Delegar a cada componente
+                let event = Event::Key(key);
+                for component in &mut self.components {
+                    let action = component.handle_events(Some(event.clone()));
+                    component.update(action);
+                }
+            }
+        }
+        Ok(())
     }
 }
