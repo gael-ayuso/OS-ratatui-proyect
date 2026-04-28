@@ -6,17 +6,21 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Padding},
+    widgets::{Block, Borders, Padding, Widget},
 };
 
 use crate::{
-    components::{Component, Event, table::TablaProcesos, title::Title},
+    action::Action,
+    components::{Component, Event, buttons::Buttons, table::TablaProcesos, title::Title},
     core::process::Process,
 };
 
 pub struct App {
     pub exit: bool,
-    components: Vec<Box<dyn Component>>,
+
+    //Declaracion de los componentes que se van a usar en la aplicacion
+    table: TablaProcesos, //Tabla de procesos
+    btn_next: Buttons,    //Boton Next
 }
 
 impl App {
@@ -30,16 +34,8 @@ impl App {
 
         Self {
             exit: false,
-            components: vec![
-                Box::new(Title::new(
-                    vec![
-                        String::from("SIMULACION DE LA APLICACION"),
-                        String::from("DEL ALGORITMO SRTF"),
-                    ],
-                    Style::default().fg(Color::White),
-                )),
-                Box::new(TablaProcesos::new(procesos)),
-            ],
+            table: TablaProcesos::new(procesos),
+            btn_next: Buttons::new(String::from("Next"), Style::default(), Action::NextStep),
         }
     }
 
@@ -69,35 +65,76 @@ impl App {
         // Un área por componente (vertical)
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(4), Constraint::Min(0)])
+            .constraints([
+                Constraint::Length(6), // Título
+                Constraint::Min(0),    // Tabla de Procesos
+                // Constraint::Length(10), // Grafica de Gantt
+                Constraint::Length(3), // Botón
+            ])
             .spacing(2)
             .split(inner);
 
-        for (i, component) in self.components.iter_mut().enumerate() {
-            if let Some(&chunk) = chunks.get(i) {
-                component.render(frame, chunk);
-            }
-        }
+        //Titulo "Simulacion del Algoritmo SRTF"
+        let title = Title::new(vec![
+            String::from("SIMULACION DE LA APLICACION"),
+            String::from("DEL ALGORITMO SRTF"),
+        ]);
+        //Agregar Titulo al frame en la primera chunk
+        frame.render_widget(title, chunks[0]);
+
+        //Tabla de procesos
+        self.table.render(frame, chunks[1]);
+
+        //Botón next
+        //Crear el layout para el botón next
+        let button_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            //Los constrainsts definen el tamaño de las columnas
+            .constraints([
+                Constraint::Min(0),     //Espacio vacio a la izquierda del boton
+                Constraint::Length(20), //Tamaño del boton
+                Constraint::Min(0),     //Espacio vacio a la derecha del boton
+            ])
+            .split(chunks[2]);
+
+        //Agregar botón next al frame en el ultimo chunk
+        self.btn_next.render(frame, button_layout[1]);
     }
 
     fn handle_events(&mut self) -> color_eyre::Result<()> {
         if event::poll(Duration::from_millis(16))? {
             let ev = event::read()?;
-            if let crossterm::event::Event::Key(key) = ev {
-                if key.kind != KeyEventKind::Press {
-                    return Ok(());
+            match ev {
+                //Evento de teclado
+                crossterm::event::Event::Key(key) => {
+                    if key.kind != KeyEventKind::Press {
+                        return Ok(());
+                    }
+                    // Teclas globales
+                    if matches!(key.code, KeyCode::Char('q') | KeyCode::Esc) {
+                        self.exit = true;
+                        return Ok(());
+                    }
+                    // Delegar a cada componente explícitamente
+                    let event = Event::Key(key);
+                    let act_table = self.table.handle_events(Some(event.clone()));
+                    self.table.update(act_table);
+
+                    let act_btn = self.btn_next.handle_events(Some(event.clone()));
+                    self.btn_next.update(act_btn);
                 }
-                // Teclas globales
-                if matches!(key.code, KeyCode::Char('q') | KeyCode::Esc) {
-                    self.exit = true;
-                    return Ok(());
+                //Evento de ratón
+                crossterm::event::Event::Mouse(mouse) => {
+                    // Delegar el evento de ratón a cada componente explícitamente
+                    let event = Event::Mouse(mouse);
+
+                    let act_table = self.table.handle_events(Some(event.clone()));
+                    self.table.update(act_table);
+
+                    let act_btn = self.btn_next.handle_events(Some(event.clone()));
+                    self.btn_next.update(act_btn);
                 }
-                // Delegar a cada componente
-                let event = Event::Key(key);
-                for component in &mut self.components {
-                    let action = component.handle_events(Some(event.clone()));
-                    component.update(action);
-                }
+                _ => {}
             }
         }
         Ok(())

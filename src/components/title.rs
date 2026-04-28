@@ -1,26 +1,31 @@
 use ratatui::{
-    Frame,
+    buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Flex, Layout, Rect},
     style::{Style, Stylize},
     text::Line,
+    widgets::Widget,
 };
 use tui_big_text::{BigText, PixelSize};
 
-use crate::components::Component;
-
 pub struct Title {
     pub lines: Vec<String>,
-    style: Style,
+    style: Option<Style>,
 }
 
 impl Title {
-    pub fn new(lines: Vec<String>, style: Style) -> Self {
-        Self { lines, style }
+    pub fn new(lines: Vec<String>) -> Self {
+        Self { lines, style: None }
+    }
+    pub fn new_with_style(lines: Vec<String>, style: Style) -> Self {
+        Self {
+            lines,
+            style: Some(style),
+        }
     }
 }
 
-impl Component for Title {
-    fn render(&mut self, frame: &mut Frame, area: Rect) {
+impl Widget for Title {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let centered_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(6)])
@@ -37,11 +42,11 @@ impl Component for Title {
 
         let big_title = BigText::builder()
             .pixel_size(PixelSize::Octant)
-            .style(self.style)
+            // .style(self.style)
             .lines(formatted_lines)
             .alignment(Alignment::Center)
             .build();
 
-        frame.render_widget(big_title, title_area);
+        big_title.render(title_area, buf);
     }
 }

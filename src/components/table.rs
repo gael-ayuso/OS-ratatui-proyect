@@ -72,6 +72,7 @@ impl Component for TablaProcesos {
             })
             .collect();
 
+        //Tamanio de las columnas
         let widths = [
             Constraint::Percentage(20),
             Constraint::Percentage(40),
