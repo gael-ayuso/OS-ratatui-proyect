@@ -35,7 +35,7 @@ impl App {
         Self {
             exit: false,
             table: TablaProcesos::new(procesos),
-            btn_next: Buttons::new(String::from("Next"), Style::default(), Action::NextStep),
+            btn_next: Buttons::new(String::from("Like si ves esto"), Style::default(), Action::NextStep),
         }
     }
 
