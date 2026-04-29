@@ -1,7 +1,9 @@
+#[derive(Debug, Clone, Copy)]
 pub struct Process {
     pub num: u32,
     pub tiempo_llegada: u32,
     pub tiempo_rafaga: u32,
+    pub tiempo_restante: u32,
 }
 
 impl Process {
@@ -10,6 +12,7 @@ impl Process {
             num,
             tiempo_llegada,
             tiempo_rafaga,
+            tiempo_restante: tiempo_rafaga,
         }
     }
 }

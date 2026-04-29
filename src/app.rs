@@ -4,9 +4,9 @@ use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style, Stylize},
+    style::{Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Padding, Widget},
+    widgets::{Block, Borders, Padding},
 };
 
 use crate::{
