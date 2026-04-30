@@ -53,6 +53,7 @@ pub trait Component {
 }
 
 pub mod buttons;
-pub mod graficaGantt;
+pub mod grafica_gantt;
+pub mod grafica_procesos;
 pub mod table;
 pub mod title;

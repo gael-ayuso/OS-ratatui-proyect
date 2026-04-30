@@ -3,15 +3,18 @@ use std::time::Duration;
 use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
-    layout::{Constraint, Direction, Layout},
-    style::{Style, Stylize},
+    layout::{Constraint, Direction, Layout, Margin, Rect},
+    style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Padding},
+    widgets::{Block, Borders, Padding, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
 use crate::{
     action::Action,
-    components::{Component, Event, buttons::Buttons, table::TablaProcesos, title::Title},
+    components::{
+        Component, Event, buttons::Buttons, grafica_gantt::GraficaGantt, table::TablaProcesos,
+        title::Title,
+    },
     core::process::Process,
 };
 
@@ -20,6 +23,7 @@ pub struct App {
 
     //Declaracion de los componentes que se van a usar en la aplicacion
     table: TablaProcesos, //Tabla de procesos
+    gantt: GraficaGantt,  //Grafica de Gantt
     btn_next: Buttons,    //Boton Next
 }
 
@@ -30,12 +34,17 @@ impl App {
             Process::new(2, 1, 4),
             Process::new(3, 2, 2),
             Process::new(4, 3, 3),
+            Process::new(5, 4, 5),
+            Process::new(6, 5, 6),
+            Process::new(7, 6, 7),
+            Process::new(8, 7, 8),
         ];
 
         Self {
             exit: false,
-            table: TablaProcesos::new(procesos),
-            btn_next: Buttons::new(String::from("Like si ves esto"), Style::default(), Action::NextStep),
+            table: TablaProcesos::new(procesos.clone()),
+            gantt: GraficaGantt::new(procesos),
+            btn_next: Buttons::new(String::from("Paso n"), Style::default(), Action::NextStep),
         }
     }
 
@@ -67,8 +76,8 @@ impl App {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(6), // Título
-                Constraint::Min(0),    // Tabla de Procesos
-                // Constraint::Length(10), // Grafica de Gantt
+                Constraint::Min(0),    // Tabla de Procesos (usar 0 permite que se encoja si la terminal es pequeña)
+                Constraint::Length(4), // Grafica de Gantt
                 Constraint::Length(3), // Botón
             ])
             .spacing(2)
@@ -95,6 +104,9 @@ impl App {
 
         self.table.render(frame, table_layout[1]);
 
+        //Grafica de Gantt
+        self.gantt.render(frame, chunks[2]);
+
         //Botón next
         //Crear el layout para el botón next
         let button_layout = Layout::default()
@@ -105,7 +117,7 @@ impl App {
                 Constraint::Length(20), //Tamaño del boton
                 Constraint::Fill(1),    //Espacio vacio a la derecha del boton
             ])
-            .split(chunks[2]);
+            .split(chunks[3]);
 
         //Agregar botón next al frame en el ultimo chunk
         self.btn_next.render(frame, button_layout[1]);
