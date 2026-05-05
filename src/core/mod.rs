@@ -1,2 +1,2 @@
 pub mod process;
-pub mod srtfAlgorithm;
+pub mod srtf_algorithm;
