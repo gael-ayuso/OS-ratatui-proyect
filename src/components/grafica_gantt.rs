@@ -11,13 +11,13 @@ use crate::{
 
 pub struct GraficaGantt {
     pub procesos: Vec<GraficaProcesos>,
-    pub total_time: u32,
+    pub total_time: f32,
 }
 
 impl GraficaGantt {
     pub fn new(processes: Vec<Process>) -> Self {
         let mut graficas = Vec::new();
-        let mut current_time = 0;
+        let mut current_time = 0.0;
         let colors = [
             Color::Blue,
             Color::Green,
@@ -50,7 +50,7 @@ impl Component for GraficaGantt {
     }
 
     fn render(&mut self, frame: &mut Frame, area: Rect) {
-        if self.total_time == 0 || self.procesos.is_empty() {
+        if self.total_time == 0.0 || self.procesos.is_empty() {
             return;
         }
 
@@ -61,7 +61,7 @@ impl Component for GraficaGantt {
             .map(|p| {
                 let duration = p.fin_ejecucion - p.inicio_ejecucion;
                 // Constraint::Fill(peso) divide el espacio basado en la relación de pesos
-                Constraint::Fill(if duration > 0 { duration as u16 } else { 1 })
+                Constraint::Fill(if duration > 0.0 { duration as u16 } else { 1 })
             })
             .collect();
 

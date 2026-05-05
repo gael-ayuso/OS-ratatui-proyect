@@ -30,14 +30,14 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         let procesos = vec![
-            Process::new(1, 0, 6),
-            Process::new(2, 1, 4),
-            Process::new(3, 2, 2),
-            Process::new(4, 3, 3),
-            Process::new(5, 4, 5),
-            Process::new(6, 5, 6),
-            Process::new(7, 6, 7),
-            Process::new(8, 7, 8),
+            Process::new(1, 0.0, 6.0),
+            Process::new(2, 1.0, 4.0),
+            Process::new(3, 2.0, 2.0),
+            Process::new(4, 3.0, 3.0),
+            Process::new(5, 4.0, 5.0),
+            Process::new(6, 5.0, 6.0),
+            Process::new(7, 6.0, 7.0),
+            Process::new(8, 7.0, 8.0),
         ];
 
         Self {
@@ -76,7 +76,7 @@ impl App {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(6), // Título
-                Constraint::Min(0),    // Tabla de Procesos (usar 0 permite que se encoja si la terminal es pequeña)
+                Constraint::Min(0), // Tabla de Procesos (usar 0 permite que se encoja si la terminal es pequeña)
                 Constraint::Length(4), // Grafica de Gantt
                 Constraint::Length(3), // Botón
             ])

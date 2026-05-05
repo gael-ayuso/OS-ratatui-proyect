@@ -8,15 +8,15 @@ use crate::components::Component;
 
 pub struct GraficaProcesos {
     pub name: String,
-    pub inicio_ejecucion: u32,
-    pub fin_ejecucion: u32,
+    pub inicio_ejecucion: f32,
+    pub fin_ejecucion: f32,
     pub tiempo_restante: f32,
     pub color: Color,
     pub area: Rect,
 }
 
 impl GraficaProcesos {
-    pub fn new(name: String, inicio_ejecucion: u32, fin_ejecucion: u32, color: Color) -> Self {
+    pub fn new(name: String, inicio_ejecucion: f32, fin_ejecucion: f32, color: Color) -> Self {
         Self {
             name,
             inicio_ejecucion,
