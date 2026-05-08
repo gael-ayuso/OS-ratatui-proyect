@@ -28,6 +28,7 @@ impl TablaProcesos {
 }
 
 impl Component for TablaProcesos {
+    //Maneja los eventos del teclado
     fn handle_key_events(&mut self, key: KeyEvent) -> Action {
         match key.code {
             KeyCode::Up => Action::SelectPrevious,

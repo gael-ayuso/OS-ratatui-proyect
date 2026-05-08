@@ -97,7 +97,7 @@ impl App {
             .direction(Direction::Horizontal)
             .constraints([
                 Constraint::Fill(1),
-                Constraint::Ratio(1, 3),
+                Constraint::Percentage(40),
                 Constraint::Fill(1),
             ])
             .split(chunks[1]);

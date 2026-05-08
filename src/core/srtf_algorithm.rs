@@ -58,10 +58,10 @@ impl Srtf {
                     {
                         //Incrementa los cambios de contexto del proceso
                         self.queue[i].context_switches += 1;
-                        //Incrementa los cambios de contexto globales
-                        self.contex_switches += 1;
                     }
                 }
+                //Incrementa los cambios de contexto globales
+                self.contex_switches += 1;
             }
             self.last_executed_id = id;
 
@@ -106,10 +106,10 @@ impl Srtf {
                 {
                     //Incrementa los cambios de contexto del proceso
                     self.queue[i].context_switches += 1;
-                    //Incrementa los cambios de contexto globales
-                    self.contex_switches += 1;
                 }
             }
+            //Incrementa los cambios de contexto globales
+            self.contex_switches += 1;
         }
         self.last_executed_id = id;
 
