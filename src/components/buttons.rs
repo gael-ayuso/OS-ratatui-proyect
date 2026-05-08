@@ -1,14 +1,11 @@
 use crossterm::event::MouseButton;
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Flex, Layout, Rect},
+    layout::{Alignment, Rect},
     style::Style,
-    widgets::{Block, Borders, Cell, Paragraph, Row},
+    widgets::{Block, Borders, Paragraph},
 };
 
-use crate::{
-    action::{self, Action},
-    components::Component,
-};
+use crate::{action::Action, components::Component};
 
 pub struct Buttons {
     label: String,
@@ -16,7 +13,7 @@ pub struct Buttons {
     style: Style,
     #[allow(unused)]
     pressed_style: Option<Style>,
-    pub action: Action,
+    action: Action,
     area: Rect,
 }
 
@@ -30,6 +27,10 @@ impl Buttons {
             action,
             area: Rect::default(),
         }
+    }
+
+    pub fn set_label(&mut self, label: String) {
+        self.label = label;
     }
 }
 
@@ -54,13 +55,13 @@ impl Component for Buttons {
             }
             crossterm::event::MouseEventKind::Up(MouseButton::Left) => {
                 self.is_pressed = false;
-                crate::action::Action::Noop
+                Action::Noop
             }
-            _ => crate::action::Action::Noop,
+            _ => Action::Noop,
         }
     }
 
-    fn update(&mut self, action: crate::action::Action) -> crate::action::Action {
+    fn update(&mut self, action: Action) -> Action {
         match action {
             Action::NextStep => self.action.clone(),
             _ => crate::action::Action::Noop,

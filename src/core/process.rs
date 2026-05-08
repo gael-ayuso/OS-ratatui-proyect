@@ -7,6 +7,8 @@ pub struct Process {
     pub tiempo_de_espera: f32,
     pub turnaround_time: f32,
     pub tiempo_finalizacion: f32,
+    pub time_last_execution: f32,
+    pub context_switches: u32,
 }
 
 impl Process {
@@ -19,6 +21,8 @@ impl Process {
             tiempo_de_espera: 0.0,
             turnaround_time: 0.0,
             tiempo_finalizacion: 0.0,
+            time_last_execution: 0.0,
+            context_switches: 0,
         }
     }
 }

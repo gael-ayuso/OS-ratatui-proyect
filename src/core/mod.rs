@@ -1,2 +1,3 @@
 pub mod process;
-pub mod srtf_algorithm;
+#[allow(non_snake_case)]
+pub mod srtf_Algorithm;

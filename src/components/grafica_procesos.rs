@@ -29,10 +29,6 @@ impl GraficaProcesos {
 }
 
 impl Component for GraficaProcesos {
-    fn init(&mut self) -> color_eyre::eyre::Result<()> {
-        Ok(())
-    }
-
     fn render(&mut self, frame: &mut ratatui::Frame, area: Rect) {
         self.area = area;
 
@@ -69,9 +65,5 @@ impl Component for GraficaProcesos {
         let tick = Paragraph::new(self.fin_ejecucion.to_string()).alignment(Alignment::Right);
 
         frame.render_widget(tick, chunks[1]);
-    }
-
-    fn update(&mut self, _action: crate::action::Action) -> crate::action::Action {
-        todo!()
     }
 }
