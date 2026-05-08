@@ -8,10 +8,7 @@ pub enum Action {
     SelectPreviousColumn,
     Noop,
     NextStep,
-    PreviousStep,
-    Play,
-    Pause,
-    Stop,
     ScrollUp,
     ScrollDown,
+    Reset,
 }

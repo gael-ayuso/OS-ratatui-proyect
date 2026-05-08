@@ -73,6 +73,12 @@ impl Component for GraficaGantt {
                 self.update_processes();
                 Action::Noop
             }
+            //Resetear la grafica de gantt
+            Action::Reset => {
+                self.procesos.clear();
+                self.total_time = 0.0;
+                Action::Noop
+            }
             _ => Action::Noop,
         }
     }

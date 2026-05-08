@@ -25,7 +25,7 @@ pub struct App {
     table: TablaProcesos, //Tabla de procesos
     gantt: GraficaGantt,  //Grafica de Gantt
     btn_next: Buttons,    //Boton Next
-    num_paso: u32,
+    num_paso: u32,        //Numero de paso del algoritmo
 }
 
 impl App {
@@ -40,8 +40,8 @@ impl App {
 
         Self {
             exit: false,
-            table: TablaProcesos::new(procesos.clone()),
-            gantt: GraficaGantt::new(procesos),
+            gantt: GraficaGantt::new(procesos.clone()),
+            table: TablaProcesos::new(procesos),
             btn_next: Buttons::new(String::from("Paso 0"), Style::default(), Action::NextStep),
             num_paso: 0,
         }
@@ -178,7 +178,7 @@ impl App {
             //Los constrainsts definen el tamaño de las columnas
             .constraints([
                 Constraint::Fill(1),    //Espacio vacio a la izquierda del boton
-                Constraint::Length(20), //Tamaño del boton
+                Constraint::Length(25), //Tamaño del boton
                 Constraint::Fill(1),    //Espacio vacio a la derecha del boton
             ])
             .split(chunks[4]);
@@ -215,7 +215,7 @@ impl App {
                     let act_table = self.table.handle_events(Some(event.clone()));
                     self.table.update(act_table);
 
-                    let act_btn = self.btn_next.handle_events(Some(event.clone()));
+                    let mut act_btn = self.btn_next.handle_events(Some(event.clone()));
                     self.btn_next.update(act_btn.clone());
 
                     if act_btn == Action::NextStep
@@ -224,9 +224,19 @@ impl App {
                     {
                         self.num_paso += 1;
                         self.btn_next.set_label(format!("Paso {}", self.num_paso));
-                    } else if act_btn == Action::NextStep {
-                        self.btn_next.set_label("Proceso Finalizado".to_string());
+                    } else if act_btn == Action::NextStep
+                        && (self.gantt.srtf_instance.procesos_completados
+                            >= self.gantt.srtf_instance.num_processes)
+                    {
+                        //Se reinicia la simulacion de los procesos
+                        act_btn = Action::Reset;
+                        self.gantt
+                            .srtf_instance
+                            .reset_srtf(self.table.lista.clone());
+                        self.num_paso = 0;
+                        self.btn_next.set_label(format!("Paso {}", self.num_paso));
                     }
+                    //Se actualiza la grafica de gantt (Siguiente paso o reinicio)
                     self.gantt.update(act_btn);
                 }
                 _ => {}

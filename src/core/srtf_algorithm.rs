@@ -179,6 +179,15 @@ impl Srtf {
     pub fn tte_ttp(&self) -> f32 {
         (self.calculate_average_waiting_time() / self.get_total_process_time()) * 100.0
     }
+
+    pub fn reset_srtf(&mut self, processes: Vec<Process>) {
+        self.queue = processes;
+        self.timer = 0.0;
+        self.procesos_completados = 0;
+        self.num_processes = self.queue.len();
+        self.last_executed_id = -1;
+        self.contex_switches = 0;
+    }
 }
 
 #[cfg(test)]
