@@ -75,9 +75,9 @@ impl App {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(6), // Título
-                Constraint::Min(0), // Tabla de Procesos (usar 0 permite que se encoja si la terminal es pequeña)
+                Constraint::Max(12), // Tabla de Procesos (usar 0 permite que se encoja si la terminal es pequeña)
                 Constraint::Length(6), // Grafica de Gantt
-                Constraint::Min(0), //Calculos de tiempos
+                Constraint::Max(8),  //Calculos de tiempos
                 Constraint::Length(3), // Botón
             ])
             .spacing(1)
