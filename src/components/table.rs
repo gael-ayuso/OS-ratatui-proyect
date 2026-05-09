@@ -41,7 +41,6 @@ impl TablaProcesos {
         }
     }
 
-    //Funcion que aplica la edicion a la tabla
     fn apply_edit(&mut self) -> Action {
         //Si la tabla esta vacia
         if self.lista.is_empty() {
@@ -51,7 +50,6 @@ impl TablaProcesos {
         let input_val = self.input.trim();
 
         //Actualiza el valor de la columna correspondiente
-
         match self.actual_colum {
             0 => {
                 if let Ok(num) = input_val.parse::<u32>() {
@@ -128,6 +126,7 @@ impl Component for TablaProcesos {
                     if !self.lista.is_empty() {
                         self.mode = InputMode::Editing;
                         let p = &self.lista[self.actual_row];
+                        //Pasa el valor de la columna a editar al input
                         self.input = match self.actual_colum {
                             0 => p.num.to_string(),
                             1 => p.tiempo_llegada.to_string(),
@@ -144,20 +143,24 @@ impl Component for TablaProcesos {
             },
             InputMode::Editing => match key.code {
                 KeyCode::Enter => {
+                    //Aplica la edicion
                     let action = self.apply_edit();
                     self.mode = InputMode::Normal;
                     self.input.clear();
                     action
                 }
                 KeyCode::Char(c) => {
+                    //Agrega el caracter al input
                     self.input.push(c);
                     Action::Noop
                 }
                 KeyCode::Backspace => {
+                    //Elimina el ultimo caracter del input
                     self.input.pop();
                     Action::Noop
                 }
                 KeyCode::Esc => {
+                    //Sale del modo edicion
                     self.mode = InputMode::Normal;
                     self.input.clear();
                     Action::Noop
