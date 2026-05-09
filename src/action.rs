@@ -11,4 +11,8 @@ pub enum Action {
     ScrollUp,
     ScrollDown,
     Reset,
+    Edit,
+    Add,
+    Delete,
+    Save,
 }

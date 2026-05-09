@@ -75,7 +75,7 @@ impl App {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(6), // Título
-                Constraint::Max(12), // Tabla de Procesos (usar 0 permite que se encoja si la terminal es pequeña)
+                Constraint::Max(18), // Tabla de Procesos (usar 0 permite que se encoja si la terminal es pequeña)
                 Constraint::Length(6), // Grafica de Gantt
                 Constraint::Max(8),  //Calculos de tiempos
                 Constraint::Length(3), // Botón
@@ -197,23 +197,28 @@ impl App {
                         return Ok(());
                     }
                     // Teclas globales
-                    if matches!(key.code, KeyCode::Char('q') | KeyCode::Esc) {
+                    if matches!(key.code, KeyCode::Char('q')) {
                         self.exit = true;
                         return Ok(());
                     }
                     // Delegar a cada componente explícitamente
                     let event = Event::Key(key);
                     let act_table = self.table.handle_events(Some(event.clone()));
-                    self.table.update(act_table);
+                    
+                    if act_table == Action::Save {
+                        //Se reinicia la simulacion de los procesos con la nueva lista
+                        self.gantt.srtf_instance.reset_srtf(self.table.lista.clone());
+                        self.num_paso = 0;
+                        self.btn_next.set_label(format!("Paso {}", self.num_paso));
+                        self.gantt.update(Action::Reset);
+                    } else {
+                        self.table.update(act_table);
+                    }
                 }
                 //Evento de ratón
                 crossterm::event::Event::Mouse(mouse) => {
                     // Delegar el evento de ratón a cada componente explícitamente
-                    // let _ = std::fs::write("debug_log.txt", format!("{:?}", mouse));
                     let event = Event::Mouse(mouse);
-
-                    let act_table = self.table.handle_events(Some(event.clone()));
-                    self.table.update(act_table);
 
                     let mut act_btn = self.btn_next.handle_events(Some(event.clone()));
                     self.btn_next.update(act_btn.clone());
