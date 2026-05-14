@@ -197,17 +197,19 @@ impl App {
                         return Ok(());
                     }
                     // Teclas globales
-                    if matches!(key.code, KeyCode::Char('q')) {
+                    if matches!(key.code, KeyCode::Char('q') | KeyCode::Char('Q')) {
                         self.exit = true;
                         return Ok(());
                     }
                     // Delegar a cada componente explícitamente
                     let event = Event::Key(key);
                     let act_table = self.table.handle_events(Some(event.clone()));
-                    
+
                     if act_table == Action::Save {
                         //Se reinicia la simulacion de los procesos con la nueva lista
-                        self.gantt.srtf_instance.reset_srtf(self.table.lista.clone());
+                        self.gantt
+                            .srtf_instance
+                            .reset_srtf(self.table.lista.clone());
                         self.num_paso = 0;
                         self.btn_next.set_label(format!("Paso {}", self.num_paso));
                         self.gantt.update(Action::Reset);

@@ -61,6 +61,14 @@ impl GraficaGantt {
                 COLORS[((next_process.num - 1) as usize) % COLORS.len()],
             ));
             self.total_time = final_process_time;
+        } else {
+            self.procesos.push(GraficaProcesos::new(
+                "Espera".to_string(),
+                self.total_time,
+                self.total_time + 1.0,
+                Color::Black,
+            ));
+            self.total_time += 1.0;
         }
     }
 }

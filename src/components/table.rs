@@ -53,7 +53,14 @@ impl TablaProcesos {
         match self.actual_colum {
             0 => {
                 if let Ok(num) = input_val.parse::<u32>() {
-                    self.lista[self.actual_row].num = num;
+                    //Comprueba si el numero ya existe en la tabla
+                    let existing = self.lista.iter().any(|p| p.num == num);
+                    if existing {
+                        let next_num = self.lista.iter().map(|p| p.num).max().unwrap_or(0) + 1;
+                        self.lista[self.actual_row].num = next_num;
+                    } else {
+                        self.lista[self.actual_row].num = num;
+                    }
                 }
             }
             1 => {
@@ -98,30 +105,10 @@ impl Component for TablaProcesos {
     fn handle_key_events(&mut self, key: KeyEvent) -> Action {
         match self.mode {
             InputMode::Normal => match key.code {
-                KeyCode::Up => {
-                    if self.actual_row > 0 {
-                        self.actual_row -= 1;
-                    }
-                    Action::SelectPrevious
-                }
-                KeyCode::Down => {
-                    if self.actual_row < self.lista.len().saturating_sub(1) {
-                        self.actual_row += 1;
-                    }
-                    Action::SelectNext
-                }
-                KeyCode::Left => {
-                    if self.actual_colum > 0 {
-                        self.actual_colum -= 1;
-                    }
-                    Action::SelectPreviousColumn
-                }
-                KeyCode::Right => {
-                    if self.actual_colum < 2 {
-                        self.actual_colum += 1;
-                    }
-                    Action::SelectNextColumn
-                }
+                KeyCode::Up => Action::SelectPrevious,
+                KeyCode::Down => Action::SelectNext,
+                KeyCode::Left => Action::SelectPreviousColumn,
+                KeyCode::Right => Action::SelectNextColumn,
                 KeyCode::Enter => {
                     if !self.lista.is_empty() {
                         self.mode = InputMode::Editing;
@@ -172,10 +159,30 @@ impl Component for TablaProcesos {
 
     fn update(&mut self, action: Action) -> Action {
         match action {
-            Action::SelectPrevious => self.table_state.select_previous(),
-            Action::SelectNext => self.table_state.select_next(),
-            Action::SelectPreviousColumn => self.table_state.select_previous_column(),
-            Action::SelectNextColumn => self.table_state.select_next_column(),
+            Action::SelectPrevious => {
+                if self.actual_row > 0 {
+                    self.actual_row -= 1;
+                }
+                self.table_state.select_previous()
+            }
+            Action::SelectNext => {
+                if self.actual_row < self.lista.len().saturating_sub(1) {
+                    self.actual_row += 1;
+                }
+                self.table_state.select_next()
+            }
+            Action::SelectPreviousColumn => {
+                if self.actual_colum > 0 {
+                    self.actual_colum -= 1;
+                }
+                self.table_state.select_previous_column()
+            }
+            Action::SelectNextColumn => {
+                if self.actual_colum < 2 {
+                    self.actual_colum += 1;
+                }
+                self.table_state.select_next_column()
+            }
             _ => {}
         }
         Action::Noop
@@ -183,6 +190,8 @@ impl Component for TablaProcesos {
 
     fn render(&mut self, frame: &mut Frame, area: Rect) {
         self.area = area;
+        self.table_state.select(Some(self.actual_row));
+        self.table_state.select_column(Some(self.actual_colum));
 
         let title_text = if self.mode == InputMode::Editing {
             "Procesos [MODO EDICION] (Enter: Confirmar, Esc: Cancelar)"

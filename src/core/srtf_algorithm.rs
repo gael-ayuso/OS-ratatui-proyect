@@ -9,7 +9,7 @@ pub struct Srtf {
     pub timer: f32,
     pub procesos_completados: usize,
     pub num_processes: usize,
-    last_executed_id: i32,
+    last_executed_id_best_process: i32,
     contex_switches: i32,
 }
 
@@ -21,7 +21,7 @@ impl Srtf {
             timer: 0.0,
             procesos_completados: 0,
             num_processes,
-            last_executed_id: -1,
+            last_executed_id_best_process: -1,
             contex_switches: 0,
         }
     }
@@ -47,41 +47,55 @@ impl Srtf {
 
     pub fn srtf(&mut self) -> f32 {
         while self.procesos_completados < self.num_processes {
-            let id = self.find_next_process();
+            let id_best_process = self.find_next_process();
 
-            //Si hay cambio de proceso
-            if self.last_executed_id != -1 && id != -1 && self.last_executed_id != id {
+            //Si hay cambio de proceso, se incrementa el contador de cambios de contexto
+            if self.last_executed_id_best_process != -1
+                && id_best_process != -1
+                && self.last_executed_id_best_process != id_best_process
+            {
                 for i in 0..self.queue.len() {
                     //Si el proceso esta en espera y tiene tiempo restante
-                    if self.queue[i].tiempo_restante > 0.0
-                        && self.queue[i].tiempo_llegada <= self.timer
-                    {
-                        //Incrementa los cambios de contexto del proceso
-                        self.queue[i].context_switches += 1;
+                    if self.queue[i].tiempo_restante > 0.0 {
+                        if self.queue[i].tiempo_llegada < self.timer {
+                            //Incrementa los cambios de contexto del proceso
+                            self.queue[i].context_switches += 1;
+                        } else if self.queue[i].tiempo_llegada == self.timer {
+                            //7. Como una extensión de la consideración anterior (la consideración 6), para el proceso cuya llegada coincida
+                            // con el instante de un cambio de contexto no se contabilizará el tiempo de cambio de contexto en su tiempo total
+                            // de espera, a menos que, según el algoritmo correspondiente, sea el proceso que deba ser colocado en la CPU
+                            // para iniciar su procesamiento, en cuyo caso, sí se contabilizará el tiempo de cambio de contexto en su tiempo
+                            // total de espera ya que el algoritmo de planificación lo deberá llevar de la cola de procesos listos (memoria RAM)
+                            // a la CPU.
+                            if i == id_best_process as usize {
+                                self.queue[i].context_switches += 1;
+                            }
+                        }
                     }
                 }
                 //Incrementa los cambios de contexto globales
                 self.contex_switches += 1;
             }
-            self.last_executed_id = id;
+            self.last_executed_id_best_process = id_best_process;
 
-            if id != -1 {
-                self.queue[id as usize].tiempo_restante -= 1.0;
+            if id_best_process != -1 {
+                self.queue[id_best_process as usize].tiempo_restante -= 1.0;
                 self.timer += 1.0;
 
-                if self.queue[id as usize].tiempo_restante == 0.0 {
+                if self.queue[id_best_process as usize].tiempo_restante == 0.0 {
                     self.procesos_completados += 1;
                     //Tiempo de finalizacion = tiempo actual + tiempo de cambios de contexto
-                    self.queue[id as usize].tiempo_finalizacion = self.timer
-                        + (self.queue[id as usize].context_switches as f32 * CONTEXT_TIME);
+                    self.queue[id_best_process as usize].tiempo_finalizacion = self.timer
+                        + (self.queue[id_best_process as usize].context_switches as f32
+                            * CONTEXT_TIME);
                     //Tiempo en la CPU = tiempo de finalizacion - tiempo de llegada
-                    self.queue[id as usize].turnaround_time = self.queue[id as usize]
-                        .tiempo_finalizacion
-                        - self.queue[id as usize].tiempo_llegada;
+                    self.queue[id_best_process as usize].turnaround_time =
+                        self.queue[id_best_process as usize].tiempo_finalizacion
+                            - self.queue[id_best_process as usize].tiempo_llegada;
                     //Tiempo de espera = tiempo en la CPU - tiempo de rafaga
-                    self.queue[id as usize].tiempo_de_espera = self.queue[id as usize]
-                        .turnaround_time
-                        - self.queue[id as usize].tiempo_rafaga;
+                    self.queue[id_best_process as usize].tiempo_de_espera =
+                        self.queue[id_best_process as usize].turnaround_time
+                            - self.queue[id_best_process as usize].tiempo_rafaga;
                 }
             } else {
                 self.timer += 1.0;
@@ -96,54 +110,71 @@ impl Srtf {
             return Process::new(0, 0.0, 0.0);
         }
 
-        let id = self.find_next_process();
+        let id_best_process = self.find_next_process();
 
         //Si hay cambio de proceso, se incrementa el contador de cambios de contexto
-        if self.last_executed_id != -1 && id != -1 && self.last_executed_id != id {
+        if self.last_executed_id_best_process != -1
+            && id_best_process != -1
+            && self.last_executed_id_best_process != id_best_process
+        {
             for i in 0..self.queue.len() {
                 //Si el proceso esta en espera y tiene tiempo restante
-                if self.queue[i].tiempo_restante > 0.0 && self.queue[i].tiempo_llegada <= self.timer
-                {
-                    //Incrementa los cambios de contexto del proceso
-                    self.queue[i].context_switches += 1;
+                if self.queue[i].tiempo_restante > 0.0 {
+                    if self.queue[i].tiempo_llegada < self.timer {
+                        //Incrementa los cambios de contexto del proceso
+                        self.queue[i].context_switches += 1;
+                    } else if self.queue[i].tiempo_llegada == self.timer {
+                        //Si el proceso i acaba de llegar en un cambio de contexto, y entra al procesador
+                        // se incrementa el contador de cambios de contexto
+                        // 7. Como una extensión de la consid_best_processeración anterior (la consid_best_processeración 6), para el proceso cuya llegada coincid_best_processa
+                        // con el instante de un cambio de contexto no se contabilizará el tiempo de cambio de contexto en su tiempo total
+                        // de espera, a menos que, según el algoritmo correspondiente, sea el proceso que deba ser colocado en la CPU
+                        // para iniciar su procesamiento, en cuyo caso, sí se contabilizará el tiempo de cambio de contexto en su tiempo
+                        // total de espera ya que el algoritmo de planificación lo deberá llevar de la cola de procesos listos (memoria RAM)
+                        // a la CPU.
+                        if i == id_best_process as usize {
+                            self.queue[i].context_switches += 1;
+                        }
+                    }
                 }
             }
             //Incrementa los cambios de contexto globales
             self.contex_switches += 1;
         }
-        self.last_executed_id = id;
+        self.last_executed_id_best_process = id_best_process;
 
-        if id != -1 {
-            self.queue[id as usize].time_last_execution = 0.0;
+        if id_best_process != -1 {
+            self.queue[id_best_process as usize].time_last_execution = 0.0;
         }
 
         loop {
-            let id2 = self.find_next_process();
+            let id_best_process2 = self.find_next_process();
 
             //Si el proceso cambia o no hay procesos pendientes
-            if id2 != id {
+            if id_best_process2 != id_best_process {
                 break;
             }
 
-            if id != -1 {
-                self.queue[id as usize].tiempo_restante -= 1.0;
+            if id_best_process != -1 {
+                self.queue[id_best_process as usize].tiempo_restante -= 1.0;
                 self.timer += 1.0;
-                self.queue[id as usize].time_last_execution += 1.0;
+                self.queue[id_best_process as usize].time_last_execution += 1.0;
 
                 //Si el proceso termina
-                if self.queue[id as usize].tiempo_restante == 0.0 {
+                if self.queue[id_best_process as usize].tiempo_restante == 0.0 {
                     self.procesos_completados += 1;
                     //Tiempo de finalizacion = tiempo actual + tiempo de cambios de contexto
-                    self.queue[id as usize].tiempo_finalizacion = self.timer
-                        + (self.queue[id as usize].context_switches as f32 * CONTEXT_TIME);
+                    self.queue[id_best_process as usize].tiempo_finalizacion = self.timer
+                        + (self.queue[id_best_process as usize].context_switches as f32
+                            * CONTEXT_TIME);
                     //Tiempo en la CPU = tiempo de finalizacion - tiempo de llegada
-                    self.queue[id as usize].turnaround_time = self.queue[id as usize]
-                        .tiempo_finalizacion
-                        - self.queue[id as usize].tiempo_llegada;
+                    self.queue[id_best_process as usize].turnaround_time =
+                        self.queue[id_best_process as usize].tiempo_finalizacion
+                            - self.queue[id_best_process as usize].tiempo_llegada;
                     //Tiempo de espera = tiempo en la CPU - tiempo de rafaga
-                    self.queue[id as usize].tiempo_de_espera = self.queue[id as usize]
-                        .turnaround_time
-                        - self.queue[id as usize].tiempo_rafaga;
+                    self.queue[id_best_process as usize].tiempo_de_espera =
+                        self.queue[id_best_process as usize].turnaround_time
+                            - self.queue[id_best_process as usize].tiempo_rafaga;
                 }
             } else {
                 self.timer += 1.0;
@@ -154,8 +185,8 @@ impl Srtf {
             }
         }
 
-        if id != -1 {
-            self.queue[id as usize]
+        if id_best_process != -1 {
+            self.queue[id_best_process as usize]
         } else {
             Process::new(0, 0.0, 0.0)
         }
@@ -185,7 +216,7 @@ impl Srtf {
         self.timer = 0.0;
         self.procesos_completados = 0;
         self.num_processes = self.queue.len();
-        self.last_executed_id = -1;
+        self.last_executed_id_best_process = -1;
         self.contex_switches = 0;
     }
 }
