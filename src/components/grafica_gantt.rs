@@ -62,13 +62,14 @@ impl GraficaGantt {
             ));
             self.total_time = final_process_time;
         } else {
+            //Tiempos muertos de la CPU
             self.procesos.push(GraficaProcesos::new(
                 "Espera".to_string(),
                 self.total_time,
-                self.total_time + 1.0,
+                self.total_time + next_process.tiempo_rafaga,
                 Color::Black,
             ));
-            self.total_time += 1.0;
+            self.total_time += next_process.tiempo_rafaga;
         }
     }
 }

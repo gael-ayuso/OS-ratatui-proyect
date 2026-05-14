@@ -54,7 +54,7 @@ impl TablaProcesos {
             0 => {
                 if let Ok(num) = input_val.parse::<u32>() {
                     //Comprueba si el numero ya existe en la tabla
-                    let existing = self.lista.iter().any(|p| p.num == num);
+                    let existing = self.lista.iter().any(|p| p.num == num) || num == 0;
                     if existing {
                         let next_num = self.lista.iter().map(|p| p.num).max().unwrap_or(0) + 1;
                         self.lista[self.actual_row].num = next_num;

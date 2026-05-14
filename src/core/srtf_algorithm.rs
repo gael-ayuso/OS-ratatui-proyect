@@ -21,7 +21,7 @@ impl Srtf {
             timer: 0.0,
             procesos_completados: 0,
             num_processes,
-            last_executed_id_best_process: -1,
+            last_executed_id_best_process: -2,
             contex_switches: 0,
         }
     }
@@ -49,11 +49,14 @@ impl Srtf {
         while self.procesos_completados < self.num_processes {
             let id_best_process = self.find_next_process();
 
+            let is_normal_preemption = self.last_executed_id_best_process != -1 
+                && self.last_executed_id_best_process != -2 
+                && id_best_process != -1 
+                && self.last_executed_id_best_process != id_best_process;
+            let is_after_idle = self.last_executed_id_best_process == -1 && id_best_process != -1;
+
             //Si hay cambio de proceso, se incrementa el contador de cambios de contexto
-            if self.last_executed_id_best_process != -1
-                && id_best_process != -1
-                && self.last_executed_id_best_process != id_best_process
-            {
+            if is_normal_preemption || is_after_idle {
                 for i in 0..self.queue.len() {
                     //Si el proceso esta en espera y tiene tiempo restante
                     if self.queue[i].tiempo_restante > 0.0 {
@@ -61,6 +64,11 @@ impl Srtf {
                             //Incrementa los cambios de contexto del proceso
                             self.queue[i].context_switches += 1;
                         } else if self.queue[i].tiempo_llegada == self.timer {
+                            //6. Cuando el tiempo de llegada de un proceso al sistema de cómputo coincida con el instante de un cambio de
+                            //contexto, de acuerdo a los objetivos a cumplir por el Sistema Operativo, se dará prioridad al cambio de contexto
+                            //correspondiente y se considerará que, el proceso que ha llegado, será recibido posteriormente por el mismo
+                            //Sistema Operativo para ser colocado en la cola de procesos listos (memoria RAM) según la consideración 1
+                            //--------------------------------------------------------------------------------------------------------
                             //7. Como una extensión de la consideración anterior (la consideración 6), para el proceso cuya llegada coincida
                             // con el instante de un cambio de contexto no se contabilizará el tiempo de cambio de contexto en su tiempo total
                             // de espera, a menos que, según el algoritmo correspondiente, sea el proceso que deba ser colocado en la CPU
@@ -78,25 +86,31 @@ impl Srtf {
             }
             self.last_executed_id_best_process = id_best_process;
 
-            if id_best_process != -1 {
-                self.queue[id_best_process as usize].tiempo_restante -= 1.0;
-                self.timer += 1.0;
+            let decrement = if self.queue[id_best_process as usize].tiempo_restante < 1.0 {
+                self.queue[id_best_process as usize].tiempo_restante
+            } else {
+                1.0
+            };
 
-                if self.queue[id_best_process as usize].tiempo_restante == 0.0 {
-                    self.procesos_completados += 1;
-                    //Tiempo de finalizacion = tiempo actual + tiempo de cambios de contexto
-                    self.queue[id_best_process as usize].tiempo_finalizacion = self.timer
-                        + (self.queue[id_best_process as usize].context_switches as f32
-                            * CONTEXT_TIME);
-                    //Tiempo en la CPU = tiempo de finalizacion - tiempo de llegada
-                    self.queue[id_best_process as usize].turnaround_time =
-                        self.queue[id_best_process as usize].tiempo_finalizacion
-                            - self.queue[id_best_process as usize].tiempo_llegada;
-                    //Tiempo de espera = tiempo en la CPU - tiempo de rafaga
-                    self.queue[id_best_process as usize].tiempo_de_espera =
-                        self.queue[id_best_process as usize].turnaround_time
-                            - self.queue[id_best_process as usize].tiempo_rafaga;
-                }
+            self.queue[id_best_process as usize].tiempo_restante -= decrement;
+            self.timer += decrement;
+            self.queue[id_best_process as usize].time_last_execution += decrement;
+
+            //Si el proceso termina
+            if self.queue[id_best_process as usize].tiempo_restante <= 0.0 {
+                self.queue[id_best_process as usize].tiempo_restante = 0.0;
+                self.procesos_completados += 1;
+                //Tiempo de finalizacion = tiempo actual + tiempo de cambios de contexto
+                self.queue[id_best_process as usize].tiempo_finalizacion = self.timer
+                    + (self.queue[id_best_process as usize].context_switches as f32 * CONTEXT_TIME);
+                //Tiempo en la CPU = tiempo de finalizacion - tiempo de llegada
+                self.queue[id_best_process as usize].turnaround_time =
+                    self.queue[id_best_process as usize].tiempo_finalizacion
+                        - self.queue[id_best_process as usize].tiempo_llegada;
+                //Tiempo de espera = tiempo en la CPU - tiempo de rafaga
+                self.queue[id_best_process as usize].tiempo_de_espera =
+                    self.queue[id_best_process as usize].turnaround_time
+                        - self.queue[id_best_process as usize].tiempo_rafaga;
             } else {
                 self.timer += 1.0;
             }
@@ -112,11 +126,21 @@ impl Srtf {
 
         let id_best_process = self.find_next_process();
 
+        //Se define el proceso "muerto" si no hay procesos pendientes
+        let mut wasted_process = if id_best_process == -1 {
+            Process::new(0, self.timer, 0.0)
+        } else {
+            Process::new(0, 0.0, 0.0)
+        };
+
+        let is_normal_preemption = self.last_executed_id_best_process != -1 
+            && self.last_executed_id_best_process != -2 
+            && id_best_process != -1 
+            && self.last_executed_id_best_process != id_best_process;
+        let is_after_idle = self.last_executed_id_best_process == -1 && id_best_process != -1;
+
         //Si hay cambio de proceso, se incrementa el contador de cambios de contexto
-        if self.last_executed_id_best_process != -1
-            && id_best_process != -1
-            && self.last_executed_id_best_process != id_best_process
-        {
+        if is_normal_preemption || is_after_idle {
             for i in 0..self.queue.len() {
                 //Si el proceso esta en espera y tiene tiempo restante
                 if self.queue[i].tiempo_restante > 0.0 {
@@ -124,9 +148,12 @@ impl Srtf {
                         //Incrementa los cambios de contexto del proceso
                         self.queue[i].context_switches += 1;
                     } else if self.queue[i].tiempo_llegada == self.timer {
-                        //Si el proceso i acaba de llegar en un cambio de contexto, y entra al procesador
-                        // se incrementa el contador de cambios de contexto
-                        // 7. Como una extensión de la consid_best_processeración anterior (la consid_best_processeración 6), para el proceso cuya llegada coincid_best_processa
+                        //6. Cuando el tiempo de llegada de un proceso al sistema de cómputo coincida con el instante de un cambio de
+                        //contexto, de acuerdo a los objetivos a cumplir por el Sistema Operativo, se dará prioridad al cambio de contexto
+                        //correspondiente y se considerará que, el proceso que ha llegado, será recibido posteriormente por el mismo
+                        //Sistema Operativo para ser colocado en la cola de procesos listos (memoria RAM) según la consideración 1
+                        //--------------------------------------------------------------------------------------------------------
+                        //7. Como una extensión de la consideración anterior (la consideración 6), para el proceso cuya llegada coincida
                         // con el instante de un cambio de contexto no se contabilizará el tiempo de cambio de contexto en su tiempo total
                         // de espera, a menos que, según el algoritmo correspondiente, sea el proceso que deba ser colocado en la CPU
                         // para iniciar su procesamiento, en cuyo caso, sí se contabilizará el tiempo de cambio de contexto en su tiempo
@@ -141,6 +168,7 @@ impl Srtf {
             //Incrementa los cambios de contexto globales
             self.contex_switches += 1;
         }
+
         self.last_executed_id_best_process = id_best_process;
 
         if id_best_process != -1 {
@@ -156,12 +184,19 @@ impl Srtf {
             }
 
             if id_best_process != -1 {
-                self.queue[id_best_process as usize].tiempo_restante -= 1.0;
-                self.timer += 1.0;
-                self.queue[id_best_process as usize].time_last_execution += 1.0;
+                let decrement = if self.queue[id_best_process as usize].tiempo_restante < 1.0 {
+                    self.queue[id_best_process as usize].tiempo_restante
+                } else {
+                    1.0
+                };
+
+                self.queue[id_best_process as usize].tiempo_restante -= decrement;
+                self.timer += decrement;
+                self.queue[id_best_process as usize].time_last_execution += decrement;
 
                 //Si el proceso termina
-                if self.queue[id_best_process as usize].tiempo_restante == 0.0 {
+                if self.queue[id_best_process as usize].tiempo_restante <= 0.0 {
+                    self.queue[id_best_process as usize].tiempo_restante = 0.0;
                     self.procesos_completados += 1;
                     //Tiempo de finalizacion = tiempo actual + tiempo de cambios de contexto
                     self.queue[id_best_process as usize].tiempo_finalizacion = self.timer
@@ -177,6 +212,8 @@ impl Srtf {
                             - self.queue[id_best_process as usize].tiempo_rafaga;
                 }
             } else {
+                //Tiempo muerto de la CPU
+                wasted_process.tiempo_rafaga += 1.0;
                 self.timer += 1.0;
             }
 
@@ -188,7 +225,7 @@ impl Srtf {
         if id_best_process != -1 {
             self.queue[id_best_process as usize]
         } else {
-            Process::new(0, 0.0, 0.0)
+            wasted_process
         }
     }
 
@@ -215,9 +252,13 @@ impl Srtf {
         self.queue = processes;
         self.timer = 0.0;
         self.procesos_completados = 0;
-        self.num_processes = self.queue.len();
-        self.last_executed_id_best_process = -1;
+        self.num_processes = self.queue.len() as usize;
+        self.last_executed_id_best_process = -2;
         self.contex_switches = 0;
+    }
+
+    pub fn has_next_process(&self) -> bool {
+        self.procesos_completados < self.num_processes
     }
 }
 
@@ -253,7 +294,7 @@ mod tests {
             Process::new(2, 3.0, 4.0),
             Process::new(3, 6.0, 2.0),
             Process::new(4, 10.0, 3.0),
-            Process::new(5, 15.0, 6.0),
+            Process::new(5, 20.0, 1.0),
         ];
         let mut srtf = Srtf::new(queue);
         let process = srtf.execute_one_process();
@@ -272,5 +313,25 @@ mod tests {
         println!("Proceso ejecutado: {:?}", process_7);
         let process_8 = srtf.execute_one_process();
         println!("Proceso ejecutado: {:?}", process_8);
+        assert!(process_8.context_switches == 1);
+        println!("Cambios de contexto: {}", srtf.contex_switches);
+
+        println!("Tiempo total: {}", srtf.get_total_process_time());
+        assert_eq!(srtf.contex_switches, 6);
+    }
+
+    #[test]
+    fn test_wasted_time() {
+        let queue = vec![
+            Process::new(1, 0.0, 1.0),
+            Process::new(2, 5.0, 1.0),
+            Process::new(3, 7.0, 2.0),
+        ];
+
+        let mut srtf = Srtf::new(queue);
+        while srtf.has_next_process() {
+            let process = srtf.execute_one_process();
+            println!("Proceso ejecutado: {:?}", process);
+        }
     }
 }
